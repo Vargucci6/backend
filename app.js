@@ -2,6 +2,7 @@ const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const jwt = require("jsonwebtoken");
 
 const PORT = process.env.PORT || 3050;
 
@@ -42,7 +43,12 @@ app.post("/add", (req, res) => {
     ) {
       res.send();
     } else {
-      if (/^[-\w.%+]{1,64}@(?:[A-Z0-9-]{1,63}\.){1,125}[A-Z]{2,63}$/i.test(customerObj.email) && customerObj.password.length >= 8) {
+      if (
+        /^[-\w.%+]{1,64}@(?:[A-Z0-9-]{1,63}\.){1,125}[A-Z]{2,63}$/i.test(
+          customerObj.email
+        ) &&
+        customerObj.password.length >= 8
+      ) {
         connection.query(sql, customerObj, (error) => {
           if (error) {
             res.send(false);
@@ -54,7 +60,6 @@ app.post("/add", (req, res) => {
       } else {
         res.send();
       }
-      
     }
   } catch (error) {
     res.send(error);
@@ -70,7 +75,7 @@ app.get("/customers", (req, res) => {
     if (results.length > 0) {
       res.json(results);
     } else {
-      res.send("No hay resultados");
+      res.send(false);
     }
   });
 });
@@ -92,18 +97,59 @@ app.get("/customers/:id", (req, res) => {
 
 //Iniciar sesión método
 
-app.get("/login", (req, res) => {
-  const { email, password } = req.body;
-  const sql = `SELECT * FROM user WHERE email = '${email}' AND password = '${password}'`;
-  connection.query(sql, (error, results) => {
-    if (error) throw error;
-    if (results.length > 0) {
-      res.json(results);
+app.post("/login", (req, res) => {
+  const customerObj = {
+    email: req.body.email,
+    password: req.body.password,
+  };
+  if (customerObj.email == "" || customerObj.password == "") {
+    res.send(false)
+  } else {
+    const sql = `SELECT * FROM user WHERE email = '${customerObj.email}' AND password = '${customerObj.password}'`;
+    connection.query(sql, (error, results) => {
+      if (error) throw error;
+      if (results.length > 0) {
+        jwt.sign(
+          { user: results },
+          "secretKey",
+          { expiresIn: "1d" },
+          function (err, token) {
+            if (err) {
+              res.send(false)
+            } else {
+              res.json (token);
+            }
+          }
+        );
+      } else {
+        res.send(false);
+      }
+    });
+  }
+});
+
+//Autorización del token
+
+app.post("/post", verifyToken, (req, res) => {
+  jwt.verify(req.token, "secretKey", (error, authData) => {
+    if (error) {
+      res.send(false);
     } else {
-      res.send("Verifica tu usuario o contraseña");
+      res.send(true);
     }
   });
 });
+
+function verifyToken(req, res, next) {
+  const bearerHeader = req.headers["authorization"];
+  if (typeof bearerHeader !== "undefined") {
+    const bearerToken = bearerHeader.split(" ")[1];
+    req.token = bearerToken;
+    next();
+  } else {
+    res.sendStatus(403);
+  }
+}
 
 //Borrar usuario
 
