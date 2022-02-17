@@ -90,7 +90,7 @@ app.get("/customers/:id", (req, res) => {
     if (results.length > 0) {
       res.json(results);
     } else {
-      res.send("No hay resultados");
+      res.send(false);
     }
   });
 });
