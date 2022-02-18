@@ -184,11 +184,15 @@ app.put("/update/:id", (req, res) => {
       if (error) throw error;
       if (results.length > 0) {
         connection.query(sql, (error) => {
-          if (error) throw error;
-          res.send("Usuario actualizado correctamente");
+          if (error) {
+            res.send(false);
+          } else {
+            res.send(true);
+          }
+          
         });
       } else {
-        res.send("No se encontró usuario");
+        res.send();
       }
     }
   );
@@ -197,7 +201,6 @@ app.put("/update/:id", (req, res) => {
 // Verificar conexión
 
 connection.connect((error) => {
-  if (error) throw error;
   console.log("Servidor de base de datos está corriendo!");
 });
 
