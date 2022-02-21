@@ -163,10 +163,10 @@ app.delete("/delete/:id", (req, res) => {
       if (results.length > 0) {
         connection.query(sql, (error) => {
           if (error) throw error;
-          res.send("Usuario eliminado correctamente");
+          res.send(true);
         });
       } else {
-        res.send("No se encontró usuario");
+        res.send(false);
       }
     }
   );
